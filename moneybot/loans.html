@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Loans</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f4f4f2; --surface: #fcfcfb; --border: #e3e2dd; --grid: #ecebe6;
+  --text: #0b0b0b; --text-2: #52514e; --text-3: #85847e;
+  --series: #2a78d6; --series-soft: #a9c8ee; --past: #c9c8c1;
+  --good: #1a7f37; --serious: #c4380f;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --page: #111110; --surface: #1a1a19; --border: #32322f; --grid: #262624;
+    --text: #ffffff; --text-2: #c3c2b7; --text-3: #8d8c84;
+    --series: #3987e5; --series-soft: #25476f; --past: #4a4a45;
+    --good: #4cc26b; --serious: #f0805a;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--text);
+  font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 1120px; margin: 0 auto; padding: 20px 16px 60px; }
+header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 16px; }
+h1 { font-size: 20px; margin: 0; }
+nav { display: flex; gap: 4px; flex: 1 1 auto; }
+nav a { color: var(--text-2); text-decoration: none; padding: 5px 10px; border-radius: 6px; }
+nav a.on { background: var(--grid); color: var(--text); font-weight: 600; }
+h2 { font-size: 15px; margin: 0 0 2px; }
+.sub { color: var(--text-2); font-size: 12.5px; margin: 0 0 14px; }
+select, input, button { font: inherit; color: var(--text); background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px; padding: 6px 9px; }
+button { cursor: pointer; }
+button.primary { background: var(--series); border-color: var(--series); color: #fff; }
+button.danger { background: var(--serious); border-color: var(--serious); color: #fff; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.tile { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+.tile .k { color: var(--text-2); font-size: 12.5px; }
+.tile .v { font-size: 24px; font-weight: 650; letter-spacing: -.01em; margin: 2px 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.tile .d { font-size: 12.5px; color: var(--text-2); }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--text-2); margin-bottom: 10px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+.chart { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 6px; }
+.yaxis { position: relative; height: 220px; font-size: 11px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.yaxis span { position: absolute; right: 0; transform: translateY(50%); }
+.plot { position: relative; height: 220px; border-bottom: 1px solid var(--border); }
+.gridline { position: absolute; left: 0; right: 0; border-top: 1px solid var(--grid); }
+.bars { position: absolute; inset: 0; display: flex; align-items: flex-end; gap: var(--gap, 2px); }
+.bcol { flex: 1 1 0; height: 100%; display: flex; align-items: flex-end; min-width: 0; }
+.bcol div { width: 100%; background: var(--series-soft); border-radius: var(--radius, 3px) var(--radius, 3px) 0 0; min-height: 1px; }
+.bcol.past div { background: var(--past); }
+.bcol.now div { background: var(--series); }
+.bcol:hover div { outline: 2px solid var(--text-3); outline-offset: 0; }
+.xaxis { display: flex; gap: var(--gap, 2px); margin-top: 4px; font-size: 11px; color: var(--text-2); }
+.xaxis span { flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: visible; }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; }
+th { text-align: left; font-weight: 500; font-size: 12px; color: var(--text-2); padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+td { padding: 8px; border-bottom: 1px solid var(--grid); vertical-align: middle; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.meta { color: var(--text-3); font-size: 12px; }
+tr.group td { background: var(--grid); font-weight: 600; border-bottom: 0; }
+tr.closed td { color: var(--text-3); }
+tr.foot td { border-bottom: 0; font-weight: 600; }
+.tag { font-size: 11px; color: var(--text-2); border: 1px solid var(--border); border-radius: 4px; padding: 0 5px; margin-left: 6px; white-space: nowrap; }
+.icon { border-color: transparent; background: none; color: var(--text-3); padding: 2px 7px; }
+.icon:hover { color: var(--text); border-color: var(--border); }
+.sort { border: 0; background: none; padding: 0; font: inherit; color: inherit; white-space: nowrap; }
+.sort span { margin-left: 4px; font-size: 10px; color: var(--text-3); }
+.sort.on { color: var(--text); font-weight: 600; }
+.sort.on span { color: var(--series); }
+.track { height: 6px; background: var(--grid); border-radius: 3px; overflow: hidden; margin-bottom: 12px; }
+.track div { height: 100%; background: var(--good); border-radius: 3px; transition: width .2s; }
+.duegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+.dueitem { display: flex; align-items: center; gap: 10px; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+.dueitem input { width: 16px; height: 16px; margin: 0; accent-color: var(--good); flex: none; }
+.dueitem .dn { flex: 1 1 auto; min-width: 0; }
+.dueitem .da { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dueitem.done { background: var(--grid); }
+.dueitem.done .dn, .dueitem.done .da { color: var(--text-2); text-decoration: line-through; }
+.cathead { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.empty { color: var(--text-2); padding: 14px 0; }
+#status { font-size: 12.5px; color: var(--serious); }
+#tip { position: fixed; pointer-events: none; background: var(--text); color: var(--page); font-size: 12px;
+  padding: 6px 9px; border-radius: 6px; display: none; z-index: 5; white-space: pre; }
+dialog { background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 18px; width: min(440px, 92vw); }
+dialog::backdrop { background: rgba(0,0,0,.45); }
+label.f { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--text-2); }
+.fgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.fgrid .wide { grid-column: 1 / -1; }
+.fgrid input { width: 100%; background: var(--page); }
+.fgrid .check { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--text); }
+.fgrid .check input { width: auto; }
+.acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+.acts .left { margin-right: auto; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Money tracker</h1>
+    <nav><a href="/">Spending</a><a href="/loans" class="on">Loans</a><a href="/budget">Budget</a><a href="/grocery">Grocery</a><a href="/cards">Cards</a></nav>
+    <span id="status"></span>
+    <button class="primary" id="add">Add loan</button>
+  </header>
+
+  <div class="tiles" id="tiles"></div>
+
+  <section class="card">
+    <div class="cathead"><div><h2 id="duetitle"></h2><p class="sub" id="duesub"></p></div><button id="markall"></button></div>
+    <div class="track"><div id="duebar"></div></div>
+    <div class="duegrid" id="due"></div>
+  </section>
+
+  <section class="card">
+    <h2>EMI per month</h2>
+    <p class="sub">Total EMI due each month until the last loan on record ends. Hover a bar for details.</p>
+    <div class="legend">
+      <span><i style="background:var(--past)"></i>Past</span>
+      <span><i style="background:var(--series)"></i>This month</span>
+      <span><i style="background:var(--series-soft)"></i>Upcoming</span>
+    </div>
+    <div class="chart">
+      <div class="yaxis" id="yaxis"></div>
+      <div><div class="plot" id="plot"></div><div class="xaxis" id="xaxis"></div></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>When the EMI drops</h2>
+    <p class="sub">Each month in which a loan finishes, and what the monthly EMI falls to afterwards.</p>
+    <div class="tablewrap"><table id="drops"></table></div>
+  </section>
+
+  <section class="card">
+    <div class="cathead"><div><h2>Loans</h2>
+      <p class="sub">Click a column heading to sort. EMIs left and amount left count from this month onwards. The chart and "EMI this month" include every loan. "Preclose now" is the principal still owed, worked out from the EMI, the EMIs left and the interest rate; the bank's own figure will differ a little and usually adds a preclosure charge.</p></div><button id="regroup" style="display:none">Group by lender</button></div>
+    <div class="tablewrap"><table id="loans"></table></div>
+  </section>
+</main>
+<div id="tip"></div>
+
+<dialog id="dlg"><form id="form">
+  <strong id="dlgtitle"></strong>
+  <div class="fgrid">
+    <label class="f">Lender <input id="flender" list="lenders" maxlength="40" required><datalist id="lenders"></datalist></label>
+    <label class="f">Loan name <input id="fname" maxlength="60" required></label>
+    <label class="f">EMI (₹) <input id="femi" type="number" min="0" step="0.01" inputmode="decimal" required></label>
+    <label class="f">Amount borrowed (₹, optional) <input id="fprincipal" type="number" min="0" step="1" inputmode="decimal"></label>
+    <label class="f">First EMI month <input id="ffirst" type="month" required></label>
+    <label class="f">Last EMI month <input id="flast" type="month" required></label>
+    <label class="f">Interest rate (% a year, optional) <input id="frate" type="number" min="0" step="0.01" inputmode="decimal"></label>
+    <label class="f wide">Note (optional) <input id="fnote" maxlength="200"></label>
+    <label class="wide check"><input id="fseparate" type="checkbox"> Track separately (leave out of "Left to pay" and the loans total)</label>
+  </div>
+  <p class="sub" id="ferr" style="color:var(--serious);margin:8px 0 0;min-height:1em"></p>
+  <div class="acts"><button type="button" class="left" id="fdelete">Delete loan</button>
+    <button type="button" id="fcancel">Cancel</button><button class="primary">Save</button></div>
+</form></dialog>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const inr = n => "₹" + Math.round(n).toLocaleString("en-IN");
+const monthName = m => new Date(m + "-01T00:00:00").toLocaleString("en-IN", { month: "short", year: "numeric" });
+const shift = (m, by) => { const d = new Date(m + "-01T00:00:00"); d.setMonth(d.getMonth() + by); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); };
+const count = (a, b) => a > b ? 0 : (parseInt(b) - parseInt(a)) * 12 + (parseInt(b.slice(5)) - parseInt(a.slice(5))) + 1;
+const NOW = (() => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); })();
+
+let PAID = new Set();   // "loanId|YYYY-MM" for every EMI ticked as paid
+const paidNow = l => PAID.has(l.id + "|" + NOW);
+const setData = j => { LOANS = j.loans; PAID = new Set((j.payments || []).map(p => p.loan_id + "|" + p.month)); };
+let LOANS = [], editing = null, SORT = null;   // SORT null = grouped by lender
+const SORT_KEYS = {
+  name: l => l.name, principal: l => l.principal, rate: l => l.rate, emi: l => l.emi,
+  left: l => left(l), pay: l => left(l) * l.emi, preclose: l => preclose(l), last: l => l.last_month,
+};
+const active = (l, m) => l.first_month <= m && m <= l.last_month;
+const emiIn = m => LOANS.filter(l => active(l, m)).reduce((a, l) => a + l.emi, 0);
+// Principal still owed: the remaining EMIs discounted at the loan's monthly rate. Null when the rate is unknown.
+const preclose = l => {
+  const n = left(l);
+  if (l.rate == null) return null;
+  const i = l.rate / 1200;
+  return i === 0 ? n * l.emi : l.emi * (1 - Math.pow(1 + i, -n)) / i;
+};
+const sumPreclose = list => list.reduce((a, l) => a + (preclose(l) ?? 0), 0);
+// EMIs still to pay, from this month on; this month's drops out once it is ticked as paid.
+const left = l => count(l.first_month > NOW ? l.first_month : NOW, l.last_month) - (active(l, NOW) && paidNow(l) ? 1 : 0);
+
+function render() {
+  const open = LOANS.filter(l => l.last_month >= NOW);
+  const counted = open.filter(l => !l.separate), apart = open.filter(l => l.separate);
+  const thisMonth = emiIn(NOW), running = LOANS.filter(l => active(l, NOW));
+  const apartEmi = apart.filter(l => active(l, NOW)).reduce((a, l) => a + l.emi, 0);
+  const remaining = counted.reduce((a, l) => a + left(l) * l.emi, 0);
+  const next = open.filter(l => left(l) > 0).sort((a, b) => a.last_month.localeCompare(b.last_month))[0];
+  const lastEnd = counted.reduce((m, l) => l.last_month > m ? l.last_month : m, NOW);
+  const apartNames = apart.map(l => l.name).join(", ");
+  $("tiles").innerHTML = [
+    ["EMI this month", inr(thisMonth), `${inr(running.filter(l => !paidNow(l)).reduce((a, l) => a + l.emi, 0))} still due` + (apartEmi ? ` · ${inr(thisMonth - apartEmi)} without ${esc(apartNames)}` : "")],
+    ["Left to pay", inr(remaining), `scheduled EMIs up to ${monthName(lastEnd)}` + (apart.length ? ` · not counting ${esc(apartNames)}` : "")],
+    ["To preclose now (estimate)", inr(sumPreclose(counted)), (() => {
+      const known = counted.filter(l => l.rate != null), missing = counted.length - known.length;
+      const saved = known.reduce((a, l) => a + left(l) * l.emi, 0) - sumPreclose(known);
+      return `saves about ${inr(saved)} interest` + (missing ? ` · ${missing} loan${missing === 1 ? "" : "s"} left out, no rate` : "");
+    })()],
+    ["Next to finish", next ? esc(next.name) : "—", next ? `last EMI ${monthName(next.last_month)} · frees ${inr(next.emi)} a month` : "no open loans"],
+    ["EMI a year from now", inr(emiIn(shift(NOW, 12))), `${monthName(shift(NOW, 12))} · ${inr(thisMonth - emiIn(shift(NOW, 12)))} less than today`],
+  ].map(([k, v, d]) => `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div><div class="d">${d}</div></div>`).join("");
+
+  renderDue(); renderChart(); renderDrops(); renderTable();
+}
+
+function renderDue() {
+  const due = LOANS.filter(l => active(l, NOW)).sort((a, b) => paidNow(a) - paidNow(b) || b.emi - a.emi);
+  const total = due.reduce((a, l) => a + l.emi, 0), paid = due.filter(paidNow).reduce((a, l) => a + l.emi, 0);
+  const unpaid = due.filter(l => !paidNow(l));
+  $("duetitle").textContent = `EMIs for ${monthName(NOW)}`;
+  $("duesub").textContent = due.length ? `${inr(paid)} paid of ${inr(total)} · ${inr(total - paid)} still due across ${unpaid.length} loan${unpaid.length === 1 ? "" : "s"}. Tick a loan once its EMI has gone out.` : "No EMIs due this month.";
+  $("duebar").style.width = total ? paid / total * 100 + "%" : "0";
+  $("markall").style.display = due.length ? "" : "none";
+  $("markall").textContent = unpaid.length ? "Mark all as paid" : "Untick all";
+  $("due").innerHTML = due.map(l => `<label class="dueitem${paidNow(l) ? " done" : ""}">
+    <input type="checkbox" data-paid="${l.id}"${paidNow(l) ? " checked" : ""}>
+    <span class="dn">${esc(l.name)} <span class="meta">${esc(l.lender)}</span></span><span class="da">${inr(l.emi)}</span></label>`).join("");
+}
+
+function renderChart() {
+  if (!LOANS.length) { $("plot").innerHTML = `<div class="empty">No loans yet.</div>`; $("yaxis").innerHTML = $("xaxis").innerHTML = ""; return; }
+  const first = LOANS.reduce((m, l) => l.first_month < m ? l.first_month : m, NOW);
+  const last = LOANS.reduce((m, l) => l.last_month > m ? l.last_month : m, NOW);
+  const months = []; for (let m = first; m <= last; m = shift(m, 1)) months.push(m);
+  const values = months.map(emiIn);
+  const step = [5000, 10000, 20000, 25000, 50000, 100000, 200000, 500000].find(s => Math.max(...values) / s <= 5) || 1000000;
+  const top = Math.max(step, Math.ceil(Math.max(...values) / step) * step);
+  const ticks = []; for (let v = 0; v <= top; v += step) ticks.push(v);
+  $("yaxis").innerHTML = ticks.map(v => `<span style="bottom:${v / top * 100}%">${v >= 100000 ? (v / 100000) + "L" : v / 1000 + "k"}</span>`).join("");
+  $("plot").innerHTML = ticks.slice(1).map(v => `<div class="gridline" style="bottom:${v / top * 100}%"></div>`).join("") +
+    `<div class="bars">` + months.map((m, i) => {
+      const ending = LOANS.filter(l => l.last_month === m).map(l => l.name);
+      const tip = `${monthName(m)}\nEMI ${inr(values[i])}` + (ending.length ? `\nLast EMI for: ${ending.join(", ")}` : "");
+      return `<div class="bcol ${m < NOW ? "past" : m === NOW ? "now" : ""}" data-tip="${esc(tip)}"><div style="height:${values[i] / top * 100}%"></div></div>`;
+    }).join("") + `</div>`;
+  // Long schedules get thinner gaps and fewer year labels so the chart always fits its card.
+  const dense = months.length > 90, every = months.length > 150 ? 2 : 1;
+  for (const el of [$("plot"), $("xaxis")]) { el.style.setProperty("--gap", dense ? "1px" : "2px"); el.style.setProperty("--radius", dense ? "1px" : "3px"); }
+  const firstJan = months.findIndex(m => m.endsWith("-01"));
+  $("xaxis").innerHTML = months.map((m, i) => {
+    const jan = m.endsWith("-01") && (parseInt(m) - parseInt(months[firstJan])) % every === 0;
+    return `<span>${jan || (i === 0 && (firstJan < 0 || firstJan > 5)) ? m.slice(0, 4) : ""}</span>`;
+  }).join("");
+}
+
+function renderDrops() {
+  const ends = [...new Set(LOANS.filter(l => l.last_month >= NOW).map(l => l.last_month))].sort();
+  $("drops").innerHTML = ends.length ? `<tr><th>Last EMI in</th><th>Loans finishing</th><th class="num">EMI freed</th><th class="num">Monthly EMI after</th></tr>` +
+    ends.map(m => {
+      const done = LOANS.filter(l => l.last_month === m);
+      return `<tr><td style="white-space:nowrap">${monthName(m)}</td><td>${done.map(l => esc(l.name) + (l.lender !== "Other" ? ` <span class="meta">${esc(l.lender)}</span>` : "") + (left(l) === 0 ? ` <span class="tag">paid off</span>` : "")).join(", ")}</td>
+        <td class="num">${inr(done.reduce((a, l) => a + l.emi, 0))}</td><td class="num">${inr(emiIn(shift(m, 1)))}</td></tr>`;
+    }).join("") : `<tr><td class="empty">No open loans.</td></tr>`;
+}
+
+function renderTable() {
+  const th = (key, label, num) => `<th class="${num ? "num" : ""}" aria-sort="${SORT?.col === key ? (SORT.dir === "asc" ? "ascending" : "descending") : "none"}">
+    <button class="sort${SORT?.col === key ? " on" : ""}" data-sort="${key}">${label}<span>${SORT?.col === key ? (SORT.dir === "asc" ? "▲" : "▼") : "↕"}</span></button></th>`;
+  const head = `<tr>${th("name", "Loan")}${th("principal", "Borrowed", 1)}${th("rate", "Rate", 1)}${th("emi", "EMI", 1)}${th("left", "EMIs left", 1)}${th("pay", "Left to pay", 1)}${th("preclose", "Preclose now", 1)}${th("last", "Last EMI")}<th></th></tr>`;
+  $("regroup").style.display = SORT ? "" : "none";
+  const row = l => {
+    const n = left(l), closed = l.last_month < NOW;
+    return `<tr class="${closed ? "closed" : ""}"><td>${esc(l.name)}${SORT && !closed && !l.separate ? ` <span class="meta">${esc(l.lender)}</span>` : ""}${closed ? `<span class="tag">closed</span>` : n === 0 ? `<span class="tag">paid off</span>` : l.first_month > NOW ? `<span class="tag">starts ${monthName(l.first_month)}</span>` : ""}
+      ${l.note ? `<div class="meta">${esc(l.note)}</div>` : ""}</td>
+      <td class="num">${l.principal == null ? "—" : inr(l.principal)}</td><td class="num">${l.rate == null ? "—" : l.rate + "%"}</td>
+      <td class="num">${inr(l.emi)}</td><td class="num">${closed ? "—" : n}</td><td class="num">${closed ? "—" : inr(n * l.emi)}</td>
+      <td class="num">${closed ? "—" : preclose(l) == null ? `<span class="meta">add rate</span>` : inr(preclose(l))}</td>
+      <td style="white-space:nowrap">${monthName(l.last_month)}</td>
+      <td><button class="icon" data-edit="${l.id}" title="Edit loan" aria-label="Edit ${esc(l.name)}">✎</button></td></tr>`;
+  };
+  const allOpen = LOANS.filter(l => l.last_month >= NOW), closed = LOANS.filter(l => l.last_month < NOW);
+  const open = allOpen.filter(l => !l.separate), apart = allOpen.filter(l => l.separate);
+  const lenders = [...new Set(open.map(l => l.lender))];
+  let html = head;
+  if (SORT) {
+    const value = SORT_KEYS[SORT.col], sign = SORT.dir === "asc" ? 1 : -1;
+    html += [...open].sort((a, b) => {
+      const x = value(a), y = value(b);
+      if (x == null || y == null) return (x == null) - (y == null);   // unknown values always sink to the bottom
+      return (typeof x === "string" ? x.localeCompare(y, undefined, { sensitivity: "base" }) : x - y) * sign;
+    }).map(row).join("");
+  } else for (const lender of lenders) {
+    const group = open.filter(l => l.lender === lender).sort((a, b) => a.last_month.localeCompare(b.last_month));
+    html += `<tr class="group"><td colspan="3">${esc(lender)}</td><td class="num">${inr(group.filter(l => active(l, NOW)).reduce((a, l) => a + l.emi, 0))}</td>
+      <td></td><td class="num">${inr(group.reduce((a, l) => a + left(l) * l.emi, 0))}</td><td class="num">${group.some(l => l.rate != null) ? inr(sumPreclose(group)) : ""}</td><td colspan="2"></td></tr>` + group.map(row).join("");
+  }
+  if (open.length) html += `<tr class="foot"><td colspan="3">Total${apart.length ? " (not counting loans tracked separately)" : ""}</td><td class="num">${inr(open.filter(l => active(l, NOW)).reduce((a, l) => a + l.emi, 0))}</td><td></td>
+    <td class="num">${inr(open.reduce((a, l) => a + left(l) * l.emi, 0))}</td><td class="num">${inr(sumPreclose(open))}</td><td colspan="2"></td></tr>`;
+  if (apart.length) html += `<tr class="group"><td colspan="9">Tracked separately</td></tr>` + apart.map(row).join("");
+  if (closed.length) html += `<tr class="group"><td colspan="9">Closed</td></tr>` + closed.map(row).join("");
+  $("loans").innerHTML = LOANS.length ? html : `<tr><td class="empty">No loans yet. Use "Add loan".</td></tr>`;
+}
+
+async function post(path, body) {
+  const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || "Request failed");
+  return j;
+}
+
+function openForm(loan) {
+  editing = loan || null;
+  $("dlgtitle").textContent = loan ? "Edit loan" : "Add loan";
+  $("ferr").textContent = "";
+  $("flender").value = loan?.lender ?? ""; $("fname").value = loan?.name ?? ""; $("femi").value = loan?.emi ?? "";
+  $("fprincipal").value = loan?.principal ?? ""; $("frate").value = loan?.rate ?? "";
+  $("ffirst").value = loan?.first_month ?? NOW; $("flast").value = loan?.last_month ?? ""; $("fnote").value = loan?.note ?? ""; $("fseparate").checked = !!loan?.separate;
+  $("lenders").innerHTML = [...new Set(LOANS.map(l => l.lender))].map(n => `<option value="${esc(n)}">`).join("");
+  $("fdelete").style.display = loan ? "" : "none";
+  $("fdelete").textContent = "Delete loan"; $("fdelete").className = "left";
+  $("dlg").showModal();
+}
+$("add").onclick = () => openForm();
+$("fcancel").onclick = () => $("dlg").close();
+$("loans").onclick = e => {
+  const id = e.target.dataset?.edit; if (id) return openForm(LOANS.find(l => l.id === Number(id)));
+  const col = e.target.closest("[data-sort]")?.dataset.sort;
+  if (col) {
+    SORT = { col, dir: SORT?.col === col ? (SORT.dir === "asc" ? "desc" : "asc") : (col === "name" || col === "last" ? "asc" : "desc") };
+    renderTable();
+  }
+};
+const markPaid = async (ids, paid) => {
+  try { setData(await post("/api/loans/paid", { ids, month: NOW, paid })); }
+  catch (err) { $("status").textContent = err.message; }
+  render();
+};
+$("due").onchange = e => { if (e.target.dataset.paid) markPaid([Number(e.target.dataset.paid)], e.target.checked); };
+$("markall").onclick = () => {
+  const due = LOANS.filter(l => active(l, NOW)), unpaid = due.filter(l => !paidNow(l));
+  markPaid((unpaid.length ? unpaid : due).map(l => l.id), unpaid.length > 0);
+};
+$("regroup").onclick = () => { SORT = null; renderTable(); };
+$("fdelete").onclick = async () => {
+  const b = $("fdelete");
+  if (!b.classList.contains("danger")) { b.textContent = "Click again to delete"; b.classList.add("danger"); return; }
+  try { setData(await post("/api/loans/delete", { id: editing.id })); $("dlg").close(); render(); }
+  catch (err) { $("ferr").textContent = err.message; }
+};
+$("form").onsubmit = async e => {
+  e.preventDefault();
+  try {
+    setData(await post("/api/loans/save", {
+      id: editing?.id, lender: $("flender").value, name: $("fname").value, emi: $("femi").value,
+      principal: $("fprincipal").value, rate: $("frate").value, first_month: $("ffirst").value,
+      last_month: $("flast").value, note: $("fnote").value, separate: $("fseparate").checked,
+    }));
+    $("dlg").close(); render();
+  } catch (err) { $("ferr").textContent = err.message; }
+};
+
+const tip = $("tip");
+document.addEventListener("mousemove", e => {
+  const el = e.target.closest("[data-tip]");
+  if (!el) { tip.style.display = "none"; return; }
+  tip.textContent = el.dataset.tip; tip.style.display = "block";
+  tip.style.left = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8) + "px";
+  tip.style.top = (e.clientY + 14) + "px";
+});
+
+fetch("/api/loans").then(r => r.json()).then(j => { setData(j); render(); })
+  .catch(e => { $("status").textContent = e.message; });
+</script>
+<script src="/collapse.js"></script>
+</body>
+</html>

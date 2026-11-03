@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Budget</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f4f4f2; --surface: #fcfcfb; --border: #e3e2dd; --grid: #ecebe6;
+  --text: #0b0b0b; --text-2: #52514e; --text-3: #85847e;
+  --series: #2a78d6; --series-soft: #a9c8ee; --past: #c9c8c1;
+  --good: #1a7f37; --serious: #c4380f;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --page: #111110; --surface: #1a1a19; --border: #32322f; --grid: #262624;
+    --text: #ffffff; --text-2: #c3c2b7; --text-3: #8d8c84;
+    --series: #3987e5; --series-soft: #25476f; --past: #4a4a45;
+    --good: #4cc26b; --serious: #f0805a;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--text);
+  font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 1120px; margin: 0 auto; padding: 20px 16px 60px; }
+header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 16px; }
+h1 { font-size: 20px; margin: 0; }
+nav { display: flex; gap: 4px; flex: 1 1 auto; }
+nav a { color: var(--text-2); text-decoration: none; padding: 5px 10px; border-radius: 6px; }
+nav a.on { background: var(--grid); color: var(--text); font-weight: 600; }
+h2 { font-size: 15px; margin: 0 0 2px; }
+.sub { color: var(--text-2); font-size: 12.5px; margin: 0 0 14px; }
+select, input, button { font: inherit; color: var(--text); background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px; padding: 6px 9px; }
+button { cursor: pointer; }
+button.primary { background: var(--series); border-color: var(--series); color: #fff; }
+button.danger { background: var(--serious); border-color: var(--serious); color: #fff; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.tile { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+.tile .k { color: var(--text-2); font-size: 12.5px; }
+.tile .v { font-size: 24px; font-weight: 650; letter-spacing: -.01em; margin: 2px 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.tile .d { font-size: 12.5px; color: var(--text-2); }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--text-2); margin-bottom: 10px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+.chart { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 6px; }
+.yaxis { position: relative; height: 220px; font-size: 11px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.yaxis span { position: absolute; right: 0; transform: translateY(50%); }
+.plot { position: relative; height: 220px; border-bottom: 1px solid var(--border); }
+.gridline { position: absolute; left: 0; right: 0; border-top: 1px solid var(--grid); }
+.bars { position: absolute; inset: 0; display: flex; align-items: flex-end; gap: var(--gap, 2px); }
+.bcol { flex: 1 1 0; height: 100%; display: flex; align-items: flex-end; min-width: 0; }
+.bcol div { width: 100%; background: var(--series-soft); border-radius: var(--radius, 3px) var(--radius, 3px) 0 0; min-height: 1px; }
+.bcol.past div { background: var(--past); }
+.bcol.now div { background: var(--series); }
+.bcol:hover div { outline: 2px solid var(--text-3); outline-offset: 0; }
+.xaxis { display: flex; gap: var(--gap, 2px); margin-top: 4px; font-size: 11px; color: var(--text-2); }
+.xaxis span { flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: visible; }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; }
+th { text-align: left; font-weight: 500; font-size: 12px; color: var(--text-2); padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+td { padding: 8px; border-bottom: 1px solid var(--grid); vertical-align: middle; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.meta { color: var(--text-3); font-size: 12px; }
+tr.group td { background: var(--grid); font-weight: 600; border-bottom: 0; }
+tr.closed td { color: var(--text-3); }
+tr.foot td { border-bottom: 0; font-weight: 600; }
+.tag { font-size: 11px; color: var(--text-2); border: 1px solid var(--border); border-radius: 4px; padding: 0 5px; margin-left: 6px; white-space: nowrap; }
+.icon { border-color: transparent; background: none; color: var(--text-3); padding: 2px 7px; }
+.icon:hover { color: var(--text); border-color: var(--border); }
+.sort { border: 0; background: none; padding: 0; font: inherit; color: inherit; white-space: nowrap; }
+.sort span { margin-left: 4px; font-size: 10px; color: var(--text-3); }
+.sort.on { color: var(--text); font-weight: 600; }
+.sort.on span { color: var(--series); }
+.track { height: 6px; background: var(--grid); border-radius: 3px; overflow: hidden; margin-bottom: 12px; }
+.track div { height: 100%; background: var(--good); border-radius: 3px; transition: width .2s; }
+.duegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+.dueitem { display: flex; align-items: center; gap: 10px; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+.dueitem input { width: 16px; height: 16px; margin: 0; accent-color: var(--good); flex: none; }
+.dueitem .dn { flex: 1 1 auto; min-width: 0; }
+.dueitem .da { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dueitem.done { background: var(--grid); }
+.dueitem.done .dn, .dueitem.done .da { color: var(--text-2); text-decoration: line-through; }
+.cathead { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.empty { color: var(--text-2); padding: 14px 0; }
+#status { font-size: 12.5px; color: var(--serious); }
+#tip { position: fixed; pointer-events: none; background: var(--text); color: var(--page); font-size: 12px;
+  padding: 6px 9px; border-radius: 6px; display: none; z-index: 5; white-space: pre; }
+dialog { background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 18px; width: min(440px, 92vw); }
+dialog::backdrop { background: rgba(0,0,0,.45); }
+label.f { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--text-2); }
+.fgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.fgrid .wide { grid-column: 1 / -1; }
+.fgrid input { width: 100%; background: var(--page); }
+.fgrid .check { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--text); }
+.fgrid .check input { width: auto; }
+.acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+.acts .left { margin-right: auto; }
+
+.monthnav { display: flex; gap: 6px; align-items: center; }
+.monthnav strong { min-width: 130px; text-align: center; }
+.allcats { font-size: 13px; color: var(--text-2); white-space: nowrap; }
+.budgetin { width: 100px; text-align: right; font-variant-numeric: tabular-nums; }
+.track div.over { background: var(--serious); }
+.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.left.over { color: var(--serious); font-weight: 600; }
+.barcell { width: 26%; min-width: 120px; }
+.addcat { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+#addcat input { width: 170px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Money tracker</h1>
+    <nav><a href="/">Spending</a><a href="/loans">Loans</a><a href="/budget" class="on">Budget</a><a href="/grocery">Grocery</a><a href="/cards">Cards</a></nav>
+    <span id="status"></span>
+    <div class="monthnav"><button id="prev" aria-label="Previous month">‹</button><strong id="month"></strong><button id="next" aria-label="Next month">›</button></div>
+  </header>
+
+  <div class="tiles" id="tiles"></div>
+
+  <section class="card">
+    <div class="cathead"><div><h2 id="title"></h2><p class="sub" id="sub"></p></div>
+      <div class="addcat">
+        <form class="addcat" id="addcat"><input placeholder="New category" maxlength="40" aria-label="New budget category"><button>Add category</button></form>
+        <label class="allcats"><input type="checkbox" id="allcats"> All categories</label>
+      </div></div>
+    </section>
+
+  <div id="groups"></div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const inr = n => (n < 0 ? "−" : "") + "₹" + Math.abs(Math.round(n)).toLocaleString("en-IN");
+const today = new Date();
+const NOW = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0");
+const monthLabel = m => new Date(m + "-01T00:00:00").toLocaleString("en-IN", { month: "long", year: "numeric" });
+const shift = (m, by) => { const d = new Date(m + "-01T00:00:00"); d.setMonth(d.getMonth() + by); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); };
+const FURTHEST = shift(NOW, 12);
+let M = NOW, showAll = false;
+let D = null;
+
+// Same numbers as the Spending page's category bars: counted debits in spending categories, approved or not pending review.
+function spentByCategory() {
+  const out = {};
+  for (const t of D.transactions) {
+    if (!t.counted || t.direction !== "debit" || t.status === "pending" || !t.date.startsWith(M)) continue;
+    if ((D.categories[t.category] || "expense") !== "expense") continue;
+    out[t.category] = (out[t.category] || 0) + t.amount;
+  }
+  return out;
+}
+
+function render() {
+  const spent = spentByCategory();
+  const defaults = D.budgets || {};
+  const own = (D.budget_months || {})[M] || {};
+  const budgetOf = c => c in own ? own[c] : defaults[c] || 0;
+  const mandatory = new Set(D.mandatory || []);
+  // Categories with a transaction this month or any budget, including a default set to 0 for this month.
+  const active = new Set(D.transactions.filter(t => t.date.startsWith(M)).map(t => t.category));
+  const kept = new Set(D.budget_categories || []);
+  const wanted = c => showAll || kept.has(c) || defaults[c] > 0 || budgetOf(c) > 0 || active.has(c);
+  const cats = Object.entries(D.categories).filter(([c, g]) => g === "expense" && wanted(c)).map(([c]) => c);
+  const rows = cats.map(c => ({ c, budget: budgetOf(c), spent: spent[c] || 0, mandatory: mandatory.has(c), kept: kept.has(c), byDefault: defaults[c] || 0, own: own[c] }))
+    .sort((a, b) => (b.budget > 0) - (a.budget > 0) || b.spent - a.spent || a.c.localeCompare(b.c));
+
+  const allocated = rows.reduce((a, r) => a + r.budget, 0);
+  const onBudget = rows.filter(r => r.budget > 0).reduce((a, r) => a + r.spent, 0);
+  const unbudgeted = rows.filter(r => !(r.budget > 0)).reduce((a, r) => a + r.spent, 0);
+  const left = allocated - onBudget;
+  $("title").textContent = "Budget for " + monthLabel(M);
+  $("sub").textContent = "The default applies to every month. A budget for this month replaces it: leave it empty to use the default, or enter 0 for no budget. Spent matches the Spending page; payments waiting for review are not counted until approved.";
+  $("month").textContent = monthLabel(M);
+  $("prev").disabled = M <= firstMonth();
+  $("next").disabled = M >= FURTHEST;
+  $("tiles").innerHTML = [
+    ["Allocated", inr(allocated), `${rows.filter(r => r.budget > 0).length} categories with a budget`],
+    ["Spent on budgeted categories", inr(onBudget), allocated ? `${Math.round(onBudget / allocated * 100)}% of the budget` : "set a budget below"],
+    ["Left", inr(left), left < 0 ? "over budget" : "still available this month"],
+    ["Spent without a budget", inr(unbudgeted), unbudgeted ? "add a budget to track it" : "nothing unbudgeted"],
+  ].map(([k, v, d], i) => `<div class="tile"><div class="k">${k}</div><div class="v"${i === 2 && left < 0 ? ' style="color:var(--serious)"' : ""}>${v}</div><div class="d">${esc(d)}</div></div>`).join("");
+
+  const group = (title, note, list) => {
+    const alloc = list.reduce((a, r) => a + r.budget, 0);
+    const got = list.filter(r => r.budget > 0).reduce((a, r) => a + r.spent, 0);
+    return `<section class="card">
+      <div class="cathead"><div><h2>${title}</h2><p class="sub">${note}</p></div>
+        <p class="sub">${list.length ? `${inr(got)} spent of ${inr(alloc)} budgeted` : "none yet"}</p></div>
+      <div class="tablewrap">${list.length ? groupTable(list) : `<p class="empty">No ${title.toLowerCase()} categories to show this month.</p>`}</div>
+    </section>`;
+  };
+  $("groups").innerHTML =
+    group("Mandatory", "Rent, EMIs, bills and other things you have to pay.", rows.filter(r => r.mandatory)) +
+    group("Normal", "Everything else you spend on.", rows.filter(r => !r.mandatory));
+  $("groups").innerHTML += `<section class="card"><div class="cathead"><div><h2>Total of all</h2><p class="sub">Mandatory and normal together.</p></div></div>
+    <div class="tablewrap"><table>${totalRow(rows, "Total of all")}</table></div></section>`;
+}
+
+// Totals row: budget and spent across the rows; Left is only for categories that have a budget.
+function totalRow(list, label) {
+  const alloc = list.reduce((a, r) => a + r.budget, 0);
+  const spent = list.reduce((a, r) => a + r.spent, 0);
+  const onBudget = list.filter(r => r.budget > 0).reduce((a, r) => a + r.spent, 0);
+  const left = alloc - onBudget;
+  return `<tr class="foot"><td><strong>${label}</strong></td><td></td><td class="num"><strong>${alloc ? inr(alloc) : "—"}</strong></td>
+    <td class="num"><strong>${inr(spent)}</strong></td><td class="num left${alloc && left < 0 ? " over" : ""}"><strong>${alloc ? inr(left) : "—"}</strong></td><td></td><td></td><td></td></tr>`;
+}
+
+function groupTable(list) {
+  return `<table><tr><th>Category</th><th class="num">Default</th><th class="num">This month</th><th class="num">Spent</th><th class="num">Left</th><th class="barcell">Used</th><th>Mandatory</th><th></th></tr>` +
+    list.map(r => {
+      const over = r.budget > 0 && r.spent > r.budget;
+      const pct = r.budget > 0 ? Math.min(100, r.spent / r.budget * 100) : 0;
+      const rest = r.budget - r.spent;
+      return `<tr>
+        <td>${esc(r.c)}</td>
+        <td class="num"><input class="budgetin defaultin" type="number" min="0" step="1" inputmode="decimal" aria-label="Default budget for ${esc(r.c)}" data-cat="${esc(r.c)}" value="${r.byDefault ? Math.round(r.byDefault) : ""}" placeholder="None"></td>
+        <td class="num"><input class="budgetin monthin" type="number" min="0" step="1" inputmode="decimal" aria-label="${esc(monthLabel(M))} budget for ${esc(r.c)}" data-cat="${esc(r.c)}" value="${r.own === undefined ? "" : Math.round(r.own)}" placeholder="${r.byDefault ? Math.round(r.byDefault) : "None"}"></td>
+        <td class="num">${inr(r.spent)}</td>
+        <td class="num left${over ? " over" : ""}">${r.budget > 0 ? inr(rest) : "—"}</td>
+        <td class="barcell">${r.budget > 0 ? `<div class="track"><div class="${over ? "over" : ""}" style="width:${pct}%"></div></div>` : `<span class="meta">no budget</span>`}</td>
+        <td><input type="checkbox" class="mandatory" aria-label="Mandatory: ${esc(r.c)}" data-cat="${esc(r.c)}"${r.mandatory ? " checked" : ""}></td>
+        <td>${r.kept ? `<button class="icon" data-unkeep="${esc(r.c)}" aria-label="Stop always showing ${esc(r.c)}" title="Stop always showing this category">✕</button>` : ""}</td>
+      </tr>`;
+    }).join("") + totalRow(list, "Total") + `</table>`;
+}
+
+async function setMandatory(category, mandatory) {
+  $("status").textContent = "Saving…";
+  try {
+    const r = await fetch("/api/budget/mandatory", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ category, mandatory }),
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || "Could not save");
+    D = j;
+    $("status").textContent = "Saved";
+  } catch (e) {
+    $("status").textContent = e.message;
+  }
+  render();
+}
+
+async function send(path, body) {
+  $("status").textContent = "Saving…";
+  try {
+    const r = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || "Could not save");
+    D = j;
+    $("status").textContent = "Saved";
+    return true;
+  } catch (e) {
+    $("status").textContent = e.message;
+    return false;
+  } finally {
+    render();
+  }
+}
+
+async function save(category, value, month) {
+  $("status").textContent = "Saving…";
+  try {
+    const r = await fetch("/api/budget", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ category, month, amount: value === "" ? null : Number(value) }),
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || "Could not save");
+    D = j;
+    $("status").textContent = "Saved";
+    render();
+  } catch (e) {
+    $("status").textContent = e.message;
+    render();
+  }
+}
+
+$("groups").addEventListener("click", e => {
+  const name = e.target.closest("[data-unkeep]")?.dataset.unkeep;
+  if (name) send("/api/budget/category/remove", { name });
+});
+
+$("addcat").addEventListener("submit", async e => {
+  e.preventDefault();
+  const input = e.target.querySelector("input"), name = input.value.trim();
+  if (name && await send("/api/budget/category", { name })) input.value = "";
+});
+
+$("groups").addEventListener("change", e => {
+  const input = e.target.closest("input.budgetin");
+  if (input) save(input.dataset.cat, input.value.trim(), input.classList.contains("monthin") ? M : null);
+  const box = e.target.closest("input.mandatory");
+  if (box) setMandatory(box.dataset.cat, box.checked);
+});
+
+function firstMonth() {
+  return D.transactions.reduce((m, t) => t.date.slice(0, 7) < m ? t.date.slice(0, 7) : m, NOW);
+}
+$("prev").onclick = () => { M = shift(M, -1); render(); };
+$("next").onclick = () => { M = shift(M, 1); render(); };
+$("allcats").onchange = e => { showAll = e.target.checked; render(); };
+
+fetch("/api/data").then(r => r.json()).then(j => { D = j; render(); });
+</script>
+<script src="/collapse.js"></script>
+</body>
+</html>

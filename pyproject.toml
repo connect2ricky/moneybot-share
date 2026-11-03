@@ -1,0 +1,18 @@
+[project]
+name = "moneybot"
+version = "0.1.0"
+description = "Personal money tracker built from bank and UPI alert emails"
+requires-python = ">=3.11"
+dependencies = [
+    "google-api-python-client>=2.100",
+    "google-auth-oauthlib>=1.2",
+    "cryptography>=42",
+    "pypdf>=6.21.4",
+]
+
+[project.scripts]
+moneybot = "moneybot.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

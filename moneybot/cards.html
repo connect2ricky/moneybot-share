@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cards</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f4f4f2; --surface: #fcfcfb; --border: #e3e2dd; --grid: #ecebe6;
+  --text: #0b0b0b; --text-2: #52514e; --text-3: #85847e;
+  --series: #2a78d6; --series-soft: #a9c8ee; --past: #c9c8c1;
+  --good: #1a7f37; --serious: #c4380f;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --page: #111110; --surface: #1a1a19; --border: #32322f; --grid: #262624;
+    --text: #ffffff; --text-2: #c3c2b7; --text-3: #8d8c84;
+    --series: #3987e5; --series-soft: #25476f; --past: #4a4a45;
+    --good: #4cc26b; --serious: #f0805a;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--text);
+  font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 1120px; margin: 0 auto; padding: 20px 16px 60px; }
+header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 16px; }
+h1 { font-size: 20px; margin: 0; }
+nav { display: flex; gap: 4px; flex: 1 1 auto; }
+nav a { color: var(--text-2); text-decoration: none; padding: 5px 10px; border-radius: 6px; }
+nav a.on { background: var(--grid); color: var(--text); font-weight: 600; }
+h2 { font-size: 15px; margin: 0 0 2px; }
+.sub { color: var(--text-2); font-size: 12.5px; margin: 0 0 14px; }
+select, input, button { font: inherit; color: var(--text); background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px; padding: 6px 9px; }
+button { cursor: pointer; }
+button.primary { background: var(--series); border-color: var(--series); color: #fff; }
+button.danger { background: var(--serious); border-color: var(--serious); color: #fff; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.tile { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+.tile .k { color: var(--text-2); font-size: 12.5px; }
+.tile .v { font-size: 24px; font-weight: 650; letter-spacing: -.01em; margin: 2px 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.tile .d { font-size: 12.5px; color: var(--text-2); }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--text-2); margin-bottom: 10px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+.chart { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 6px; }
+.yaxis { position: relative; height: 220px; font-size: 11px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.yaxis span { position: absolute; right: 0; transform: translateY(50%); }
+.plot { position: relative; height: 220px; border-bottom: 1px solid var(--border); }
+.gridline { position: absolute; left: 0; right: 0; border-top: 1px solid var(--grid); }
+.bars { position: absolute; inset: 0; display: flex; align-items: flex-end; gap: var(--gap, 2px); }
+.bcol { flex: 1 1 0; height: 100%; display: flex; align-items: flex-end; min-width: 0; }
+.bcol div { width: 100%; background: var(--series-soft); border-radius: var(--radius, 3px) var(--radius, 3px) 0 0; min-height: 1px; }
+.bcol.past div { background: var(--past); }
+.bcol.now div { background: var(--series); }
+.bcol:hover div { outline: 2px solid var(--text-3); outline-offset: 0; }
+.xaxis { display: flex; gap: var(--gap, 2px); margin-top: 4px; font-size: 11px; color: var(--text-2); }
+.xaxis span { flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: visible; }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; }
+th { text-align: left; font-weight: 500; font-size: 12px; color: var(--text-2); padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+td { padding: 8px; border-bottom: 1px solid var(--grid); vertical-align: middle; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.meta { color: var(--text-3); font-size: 12px; }
+tr.group td { background: var(--grid); font-weight: 600; border-bottom: 0; }
+tr.closed td { color: var(--text-3); }
+tr.foot td { border-bottom: 0; font-weight: 600; }
+.tag { font-size: 11px; color: var(--text-2); border: 1px solid var(--border); border-radius: 4px; padding: 0 5px; margin-left: 6px; white-space: nowrap; }
+.icon { border-color: transparent; background: none; color: var(--text-3); padding: 2px 7px; }
+.icon:hover { color: var(--text); border-color: var(--border); }
+.sort { border: 0; background: none; padding: 0; font: inherit; color: inherit; white-space: nowrap; }
+.sort span { margin-left: 4px; font-size: 10px; color: var(--text-3); }
+.sort.on { color: var(--text); font-weight: 600; }
+.sort.on span { color: var(--series); }
+.track { height: 6px; background: var(--grid); border-radius: 3px; overflow: hidden; margin-bottom: 12px; }
+.track div { height: 100%; background: var(--good); border-radius: 3px; transition: width .2s; }
+.duegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+.dueitem { display: flex; align-items: center; gap: 10px; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+.dueitem input { width: 16px; height: 16px; margin: 0; accent-color: var(--good); flex: none; }
+.dueitem .dn { flex: 1 1 auto; min-width: 0; }
+.dueitem .da { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dueitem.done { background: var(--grid); }
+.dueitem.done .dn, .dueitem.done .da { color: var(--text-2); text-decoration: line-through; }
+.cathead { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.empty { color: var(--text-2); padding: 14px 0; }
+#status { font-size: 12.5px; color: var(--serious); }
+#tip { position: fixed; pointer-events: none; background: var(--text); color: var(--page); font-size: 12px;
+  padding: 6px 9px; border-radius: 6px; display: none; z-index: 5; white-space: pre; }
+dialog { background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 18px; width: min(440px, 92vw); }
+dialog::backdrop { background: rgba(0,0,0,.45); }
+label.f { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--text-2); }
+.fgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.fgrid .wide { grid-column: 1 / -1; }
+.fgrid input { width: 100%; background: var(--page); }
+.fgrid .check { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--text); }
+.fgrid .check input { width: auto; }
+.acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+.acts .left { margin-right: auto; }
+
+.monthnav { display: flex; gap: 6px; align-items: center; }
+.monthnav strong { min-width: 130px; text-align: center; }
+.stmt { cursor: pointer; }
+.stmt:hover td { background: var(--grid); }
+.stmt td:first-child::before { content: "▸"; color: var(--text-3); display: inline-block; width: 16px; }
+.stmt.open td:first-child::before { content: "▾"; }
+.detail td { padding: 0 8px 14px 24px; background: none; }
+.detail td table td { padding: 5px 8px; font-size: 13px; }
+.details { overflow-wrap: anywhere; }
+.credit { color: var(--good); }
+.barcell { width: 18%; min-width: 110px; }
+.track { margin: 0; }
+.track div { background: var(--series); }
+.warn { color: var(--serious); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Money tracker</h1>
+    <nav><a href="/">Spending</a><a href="/loans">Loans</a><a href="/budget">Budget</a><a href="/grocery">Grocery</a><a href="/cards" class="on">Cards</a></nav>
+    <span id="status"></span>
+    <div class="monthnav"><button id="prev" aria-label="Previous month">‹</button><strong id="month"></strong><button id="next" aria-label="Next month">›</button></div>
+  </header>
+
+  <div class="tiles" id="tiles"></div>
+  <div id="problems"></div>
+
+  <section class="card">
+    <h2 id="title"></h2>
+    <p class="sub">From the statements your banks email. This page is separate: nothing here changes Spending or Budget. Others is the total due less the EMIs and GST. Click a statement to see its transactions.</p>
+    <div class="tablewrap" id="list"></div>
+  </section>
+
+  <section class="card" id="emisection">
+    <h2 id="emititle"></h2>
+    <p class="sub">EMI is principal, interest and GST. GST not on an EMI's interest, such as on fees, is shown as GST on fees. HDFC bills GST a statement later, so it counts on the statement that charges it. Months left and the end month are worked out from the instalment number.</p>
+    <div class="tablewrap" id="emis"></div>
+  </section>
+
+  <section class="card">
+    <h2 id="otherstitle"></h2>
+    <p class="sub">Everything on these statements except EMIs, GST and your bill payments. Refunds show as minus.</p>
+    <div class="tablewrap" id="others"></div>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const inr = n => (n < 0 ? "−" : "") + "₹" + Math.abs(n).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const monthLabel = m => new Date(m + "-01T00:00:00").toLocaleString("en-IN", { month: "long", year: "numeric" });
+const dayLabel = d => new Date(d + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+let D = null, M = null;
+const opened = new Set();
+const endLabel = (m, left) => { const d = new Date(m + "-01T00:00:00"); d.setMonth(d.getMonth() + left); return d.toLocaleString("en-IN", { month: "short", year: "numeric" }); };
+const numberOf = e => e.tenure ? `${e.number}/${e.tenure}` : e.number ? `${e.number}` : "—";
+const keyOf = s => s.card + "|" + s.statement_date;
+const months = () => [...new Set(D.statements.map(s => s.statement_date.slice(0, 7)))].sort();
+
+function rowsTable(s) {
+  if (!s.rows.length) return `<p class="empty">No transactions on this statement.</p>`;
+  return `<table>` + s.rows.map(r => `<tr><td style="white-space:nowrap">${esc(dayLabel(r.date))}</td><td class="details">${esc(r.details)}${r.emi ? `<span class="tag">EMI ${esc(r.emi_number)}</span>` : ""}</td>
+    <td class="num${r.credit ? " credit" : ""}">${r.credit ? "−" : ""}${inr(r.amount)}</td></tr>`).join("") + `</table>`;
+}
+
+function render() {
+  $("problems").innerHTML = D.problems.length ? `<section class="card"><h2 class="warn">Statements that could not be read</h2>` +
+    D.problems.map(p => `<p class="sub">${esc(p.card)}: ${esc(p.message)} (${p.count})</p>`).join("") + `</section>` : "";
+  const all = months();
+  if (!all.length) {
+    $("month").textContent = "";
+    $("title").textContent = "No statements yet";
+    return;
+  }
+  if (!all.includes(M)) M = all[all.length - 1];
+  const list = D.statements.filter(s => s.statement_date.startsWith(M));
+  const total = list.reduce((a, s) => a + s.total_due, 0);
+  const least = list.reduce((a, s) => a + s.min_due, 0);
+  const nextDue = list.filter(s => s.total_due > 0).map(s => s.due_date).sort()[0];
+  const used = list.reduce((a, s) => a + s.credit_limit - s.available, 0);
+  const emiOf = s => s.emis.reduce((a, e) => a + e.amount, 0);
+  const emis = list.flatMap(s => s.emis.map(e => ({ ...e, card: s.card, last4: s.last4, month: s.statement_date.slice(0, 7) })));
+  const emiTotal = emis.reduce((a, e) => a + e.amount, 0);
+  const emiInterest = emis.reduce((a, e) => a + e.interest, 0);
+  $("month").textContent = monthLabel(M);
+  $("prev").disabled = M === all[0];
+  $("next").disabled = M === all[all.length - 1];
+  $("title").textContent = `Statements in ${monthLabel(M)}`;
+  $("tiles").innerHTML = [
+    ["Total due", inr(total), `${list.length} statement${list.length === 1 ? "" : "s"}`],
+    ["Minimum due", inr(least), "across these statements"],
+    ["EMIs", inr(emiTotal), `${emis.filter(e => e.principal > 0).length} running · ${inr(emiInterest)} interest`],
+    ["Earliest due date", nextDue ? dayLabel(nextDue) : "—", nextDue ? "of those with something due" : "nothing due"],
+    ["Credit in use", inr(used), "on the statement dates"],
+  ].map(([k, v, d]) => `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div><div class="d">${esc(d)}</div></div>`).join("");
+  $("list").innerHTML = `<table><tr><th>Card</th><th>Due date</th><th class="num">Total due</th><th class="num">EMIs</th><th class="num">Others</th><th class="barcell">Limit used</th></tr>` +
+    list.map(s => {
+      const key = keyOf(s), open = opened.has(key), pct = s.credit_limit ? (s.credit_limit - s.available) / s.credit_limit * 100 : 0;
+      return `<tr class="stmt${open ? " open" : ""}" data-key="${esc(key)}"><td>${esc(s.card)} <span class="meta">…${esc(s.last4)}</span>${s.balanced ? "" : `<span class="tag warn">check figures</span>`}</td>
+        <td>${esc(dayLabel(s.due_date))}</td>
+        <td class="num">${inr(s.total_due)}</td><td class="num">${s.emis.length ? `${inr(emiOf(s))}<div class="meta">${s.emis.filter(e => e.number).map(numberOf).join(" · ")}</div>` : "—"}</td><td class="num">${inr(s.others)}</td>
+        <td class="barcell" title="${inr(s.credit_limit - s.available)} of ${inr(s.credit_limit)}"><div class="track"><div style="width:${Math.min(100, pct)}%"></div></div></td></tr>` +
+        (open ? `<tr class="detail"><td colspan="6"><p class="meta">Statement ${esc(dayLabel(s.statement_date))} · period ${esc(dayLabel(s.period_start))} to ${esc(dayLabel(s.period_end))} · previous balance ${inr(s.previous)}</p>${rowsTable(s)}</td></tr>` : "");
+    }).join("") + `<tr class="foot"><td>Total</td><td></td><td class="num">${inr(total)}</td><td class="num">${emiTotal ? inr(emiTotal) : "—"}</td><td class="num">${inr(list.reduce((a, s) => a + s.others, 0))}</td><td></td></tr></table>`;
+  const others = list.flatMap(s => s.rows.filter(r => !r.emi && !r.payment).map(r => ({ ...r, card: s.card, last4: s.last4 })))
+    .sort((a, b) => b.date.localeCompare(a.date));
+  const signed = r => r.credit ? -r.amount : r.amount;
+  $("otherstitle").textContent = `Other expenses in ${monthLabel(M)}`;
+  $("others").innerHTML = !others.length ? `<p class="empty">Nothing else on these statements.</p>` :
+    `<table><tr><th>Card</th><th>Date</th><th>Details</th><th class="num">Amount</th></tr>` +
+    others.map(r => `<tr><td style="white-space:nowrap">${esc(r.card)} <span class="meta">…${esc(r.last4)}</span></td><td style="white-space:nowrap">${esc(dayLabel(r.date))}</td>
+      <td class="details">${esc(r.label)}</td><td class="num${r.credit ? " credit" : ""}">${inr(signed(r))}</td></tr>`).join("") +
+    `<tr class="foot"><td>Total</td><td></td><td></td><td class="num">${inr(others.reduce((a, r) => a + signed(r), 0))}</td></tr></table>`;
+  $("emititle").textContent = `Monthly EMIs in ${monthLabel(M)}`;
+  $("emis").innerHTML = !emis.length ? `<p class="empty">No EMIs on these statements.</p>` :
+    `<table><tr><th>Card</th><th>EMI</th><th>Instalment</th><th class="num">Principal</th><th class="num">Interest</th><th class="num">GST</th><th class="num">EMI</th><th class="num">Months left</th><th>Ends</th></tr>` +
+    emis.map(e => `<tr><td>${esc(e.card)} <span class="meta">…${esc(e.last4)}</span></td><td>${esc(e.name)}</td>
+      <td>${numberOf(e)}</td><td class="num">${inr(e.principal)}</td><td class="num">${inr(e.interest)}</td><td class="num">${inr(e.gst)}</td><td class="num">${inr(e.amount)}</td>
+      <td class="num">${e.left ?? "—"}</td><td>${e.left === null ? "—" : e.left === 0 ? "Last one" : esc(endLabel(e.month, e.left))}</td></tr>`).join("") +
+    `<tr class="foot"><td>Total</td><td></td><td></td><td class="num">${inr(emis.reduce((a, e) => a + e.principal, 0))}</td><td class="num">${inr(emiInterest)}</td><td class="num">${inr(emis.reduce((a, e) => a + e.gst, 0))}</td><td class="num">${inr(emiTotal)}</td><td></td><td></td></tr></table>`;
+}
+
+$("list").addEventListener("click", e => {
+  const key = e.target.closest(".stmt")?.dataset.key;
+  if (!key) return;
+  opened.has(key) ? opened.delete(key) : opened.add(key);
+  render();
+});
+const step = by => { const all = months(); M = all[all.indexOf(M) + by]; render(); };
+$("prev").onclick = () => step(-1);
+$("next").onclick = () => step(1);
+
+fetch("/api/data").then(r => r.json()).then(j => { D = j.cards; render(); });
+</script>
+<script src="/collapse.js"></script>
+</body>
+</html>

@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grocery</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f4f4f2; --surface: #fcfcfb; --border: #e3e2dd; --grid: #ecebe6;
+  --text: #0b0b0b; --text-2: #52514e; --text-3: #85847e;
+  --series: #2a78d6; --series-soft: #a9c8ee; --past: #c9c8c1;
+  --good: #1a7f37; --serious: #c4380f;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --page: #111110; --surface: #1a1a19; --border: #32322f; --grid: #262624;
+    --text: #ffffff; --text-2: #c3c2b7; --text-3: #8d8c84;
+    --series: #3987e5; --series-soft: #25476f; --past: #4a4a45;
+    --good: #4cc26b; --serious: #f0805a;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--text);
+  font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 1120px; margin: 0 auto; padding: 20px 16px 60px; }
+header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 16px; }
+h1 { font-size: 20px; margin: 0; }
+nav { display: flex; gap: 4px; flex: 1 1 auto; }
+nav a { color: var(--text-2); text-decoration: none; padding: 5px 10px; border-radius: 6px; }
+nav a.on { background: var(--grid); color: var(--text); font-weight: 600; }
+h2 { font-size: 15px; margin: 0 0 2px; }
+.sub { color: var(--text-2); font-size: 12.5px; margin: 0 0 14px; }
+select, input, button { font: inherit; color: var(--text); background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px; padding: 6px 9px; }
+button { cursor: pointer; }
+button.primary { background: var(--series); border-color: var(--series); color: #fff; }
+button.danger { background: var(--serious); border-color: var(--serious); color: #fff; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.tile { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+.tile .k { color: var(--text-2); font-size: 12.5px; }
+.tile .v { font-size: 24px; font-weight: 650; letter-spacing: -.01em; margin: 2px 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.tile .d { font-size: 12.5px; color: var(--text-2); }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--text-2); margin-bottom: 10px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+.chart { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 6px; }
+.yaxis { position: relative; height: 220px; font-size: 11px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.yaxis span { position: absolute; right: 0; transform: translateY(50%); }
+.plot { position: relative; height: 220px; border-bottom: 1px solid var(--border); }
+.gridline { position: absolute; left: 0; right: 0; border-top: 1px solid var(--grid); }
+.bars { position: absolute; inset: 0; display: flex; align-items: flex-end; gap: var(--gap, 2px); }
+.bcol { flex: 1 1 0; height: 100%; display: flex; align-items: flex-end; min-width: 0; }
+.bcol div { width: 100%; background: var(--series-soft); border-radius: var(--radius, 3px) var(--radius, 3px) 0 0; min-height: 1px; }
+.bcol.past div { background: var(--past); }
+.bcol.now div { background: var(--series); }
+.bcol:hover div { outline: 2px solid var(--text-3); outline-offset: 0; }
+.xaxis { display: flex; gap: var(--gap, 2px); margin-top: 4px; font-size: 11px; color: var(--text-2); }
+.xaxis span { flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: visible; }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; }
+th { text-align: left; font-weight: 500; font-size: 12px; color: var(--text-2); padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+td { padding: 8px; border-bottom: 1px solid var(--grid); vertical-align: middle; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.meta { color: var(--text-3); font-size: 12px; }
+tr.group td { background: var(--grid); font-weight: 600; border-bottom: 0; }
+tr.closed td { color: var(--text-3); }
+tr.foot td { border-bottom: 0; font-weight: 600; }
+.tag { font-size: 11px; color: var(--text-2); border: 1px solid var(--border); border-radius: 4px; padding: 0 5px; margin-left: 6px; white-space: nowrap; }
+.icon { border-color: transparent; background: none; color: var(--text-3); padding: 2px 7px; }
+.icon:hover { color: var(--text); border-color: var(--border); }
+.sort { border: 0; background: none; padding: 0; font: inherit; color: inherit; white-space: nowrap; }
+.sort span { margin-left: 4px; font-size: 10px; color: var(--text-3); }
+.sort.on { color: var(--text); font-weight: 600; }
+.sort.on span { color: var(--series); }
+.track { height: 6px; background: var(--grid); border-radius: 3px; overflow: hidden; margin-bottom: 12px; }
+.track div { height: 100%; background: var(--good); border-radius: 3px; transition: width .2s; }
+.duegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+.dueitem { display: flex; align-items: center; gap: 10px; border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+.dueitem input { width: 16px; height: 16px; margin: 0; accent-color: var(--good); flex: none; }
+.dueitem .dn { flex: 1 1 auto; min-width: 0; }
+.dueitem .da { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dueitem.done { background: var(--grid); }
+.dueitem.done .dn, .dueitem.done .da { color: var(--text-2); text-decoration: line-through; }
+.cathead { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.empty { color: var(--text-2); padding: 14px 0; }
+#status { font-size: 12.5px; color: var(--serious); }
+#tip { position: fixed; pointer-events: none; background: var(--text); color: var(--page); font-size: 12px;
+  padding: 6px 9px; border-radius: 6px; display: none; z-index: 5; white-space: pre; }
+dialog { background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 18px; width: min(440px, 92vw); }
+dialog::backdrop { background: rgba(0,0,0,.45); }
+label.f { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--text-2); }
+.fgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.fgrid .wide { grid-column: 1 / -1; }
+.fgrid input { width: 100%; background: var(--page); }
+.fgrid .check { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--text); }
+.fgrid .check input { width: auto; }
+.acts { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+.acts .left { margin-right: auto; }
+
+.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.monthnav { display: flex; gap: 6px; align-items: center; }
+.monthnav strong { min-width: 130px; text-align: center; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.two .card { margin-bottom: 0; }
+.barrow { padding: 6px 0; }
+.barrow .top { display: flex; justify-content: space-between; gap: 12px; font-size: 13.5px; margin-bottom: 4px; }
+.barrow .track { margin: 0; }
+.barrow .track div { background: var(--series); }
+.notice { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--serious); border-radius: 10px; padding: 10px 16px; margin-bottom: 12px; font-size: 13px; }
+.up { color: var(--serious); } .down { color: var(--good); }
+.prices { font-size: 12px; color: var(--text-2); white-space: nowrap; }
+details.bill { border-top: 1px solid var(--grid); padding: 8px 0; }
+details.bill summary { cursor: pointer; display: flex; justify-content: space-between; gap: 12px; font-size: 13.5px; }
+select { font: inherit; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Money tracker</h1>
+    <nav><a href="/">Spending</a><a href="/loans">Loans</a><a href="/budget">Budget</a><a href="/grocery" class="on">Grocery</a><a href="/cards">Cards</a></nav>
+    <span id="status"></span>
+    <div class="monthnav"><button id="prev" aria-label="Previous month">‹</button><strong id="month"></strong><button id="next" aria-label="Next month">›</button></div>
+  </header>
+  <div id="problems"></div>
+  <div class="tiles" id="tiles"></div>
+  <div class="two" style="margin-bottom:16px">
+    <section class="card"><h2>By subcategory</h2><p class="sub">Your Groceries subcategories from the Spending page. Change them there.</p><div id="subs"></div></section>
+    <section class="card"><h2>By item group</h2><p class="sub">From the bills you have forwarded.</p><div id="groups"></div></section>
+  </div>
+  <section class="card">
+    <div class="cathead"><div><h2>Items</h2><p class="sub">Change an item's group once and it is remembered. Prices are the shelf price on each bill, oldest first.</p></div></div>
+    <input type="search" id="q" placeholder="Search items" aria-label="Search items" style="margin-bottom:10px">
+    <div class="tablewrap"><table id="items"></table></div>
+  </section>
+  <section class="card"><h2>Bills</h2><p class="sub">Email a Star Bazaar link to yourself with Star Bazaar in the subject, then fetch new emails.</p><div id="bills"></div></section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const inr = n => (n < 0 ? "−" : "") + "₹" + Math.abs(Math.round(n)).toLocaleString("en-IN");
+const paise = n => "₹" + Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 });
+const monthLabel = m => new Date(m + "-01T00:00:00").toLocaleString("en-IN", { month: "long", year: "numeric" });
+const day = d => new Date(d + "T00:00:00").toLocaleString("en-IN", { day: "numeric", month: "short" });
+const qty = (q, u) => u === "KG" ? `${q.toFixed(2)} kg` : `${q}`;
+let G = null, M = null, query = "";
+
+const bars = (list, top) => list.map(r => `<div class="barrow"><div class="top"><span>${esc(r.name)}${r.payees ? `<div class="meta">${esc(r.payees.join(", "))}</div>` : ""}</span><strong>${inr(r.amount)}</strong></div>
+  <div class="track"><div style="width:${r.amount / top * 100}%"></div></div></div>`).join("");
+
+function priceCell(i) {
+  const h = i.history.map(p => p.price), first = h[0], last = h[h.length - 1];
+  if (h.length < 2) return `<span class="prices">${paise(last)}</span>`;
+  const pct = (last - first) / first * 100;
+  const change = Math.abs(pct) < 0.5 ? "" : ` <span class="${pct > 0 ? "up" : "down"}">${pct > 0 ? "▲" : "▼"} ${Math.abs(pct).toFixed(0)}%</span>`;
+  return `<span class="prices" title="${esc(i.history.map(p => day(p.date) + ": " + paise(p.price)).join(", "))}">${h.map(paise).join(" → ")}${change}</span>`;
+}
+
+function render() {
+  const months = Object.keys(G.months).sort();
+  if (!M || !months.includes(M)) M = months[months.length - 1] || null;
+  $("problems").innerHTML = G.problems.map(p => `<div class="notice">${esc(p.message)}</div>`).join("");
+  if (!M) { $("month").textContent = ""; $("items").innerHTML = ""; return; }
+  const i = months.indexOf(M), m = G.months[M], before = G.months[months[i - 1]];
+  $("month").textContent = monthLabel(M);
+  $("prev").disabled = i <= 0;
+  $("next").disabled = i >= months.length - 1;
+  const change = before && before.total ? `${m.total >= before.total ? "▲" : "▼"} ${Math.abs((m.total - before.total) / before.total * 100).toFixed(0)}% vs ${monthLabel(months[i - 1])}` : "no earlier month to compare";
+  const cover = m.total ? Math.round(Math.min(1, m.billed / m.total) * 100) : 0;
+  $("tiles").innerHTML = [
+    ["Groceries", inr(m.total), change],
+    ["Detailed by bills", inr(m.billed), `${cover}% of groceries this month`],
+    ["Bills", m.bills.length, `${m.items.length} different items`],
+    ["Biggest item group", m.groups[0] ? esc(m.groups[0].name) : "—", m.groups[0] ? inr(m.groups[0].amount) : "no bills yet"],
+  ].map(([k, v, d]) => `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div><div class="d">${d}</div></div>`).join("");
+
+  const top = Math.max(1, ...m.subcategories.map(s => s.amount));
+  $("subs").innerHTML = bars(m.subcategories, top) || `<p class="empty">No grocery payments this month.</p>`;
+  const gtop = Math.max(1, ...m.groups.map(g => g.amount));
+  $("groups").innerHTML = bars(m.groups, gtop) || `<p class="empty">No bills for this month yet.</p>`;
+
+  const q = query.trim().toLowerCase();
+  const items = m.items.filter(it => !q || it.name.toLowerCase().includes(q));
+  $("items").innerHTML = items.length ? `<tr><th>Item</th><th>Group</th><th class="num">Bought</th><th class="num">Spent</th><th>Price history</th></tr>` + items.map(it => `<tr>
+    <td>${esc(it.name)}</td>
+    <td><select data-code="${esc(it.code)}" aria-label="Group for ${esc(it.name)}">${G.groups.map(g => `<option${g === it.group ? " selected" : ""}>${esc(g)}</option>`).join("")}</select></td>
+    <td class="num">${qty(it.quantity, it.unit)}</td><td class="num">${inr(it.amount)}</td><td>${priceCell(it)}</td></tr>`).join("")
+    : `<tr><td class="empty">${m.items.length ? "No items match." : "Forward a bill to see its items."}</td></tr>`;
+
+  $("bills").innerHTML = m.bills.map(b => `<details class="bill"><summary><span>${day(b.date)} · ${esc(b.source)}${b.matched ? "" : ` <span class="tag">no payment found</span>`}</span><strong>${paise(b.total)}</strong></summary>
+    <div class="tablewrap"><table>${b.items.map(l => `<tr><td>${esc(l.name)}</td><td class="num">${qty(l.quantity, l.unit)}</td><td class="num">${paise(l.price)}</td><td class="num">${paise(l.amount)}</td></tr>`).join("")}</table></div></details>`).join("") || `<p class="empty">No bills for this month yet.</p>`;
+}
+
+async function post(path, body) {
+  $("status").textContent = "Saving…";
+  try {
+    const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || "Could not save");
+    G = j.grocery;
+    $("status").textContent = "Saved";
+  } catch (e) { $("status").textContent = e.message; }
+  render();
+}
+
+document.addEventListener("change", e => {
+  if (e.target.dataset.code) post("/api/grocery/group", { code: e.target.dataset.code, group: e.target.value });
+});
+const step = by => { const months = Object.keys(G.months).sort(); M = months[months.indexOf(M) + by]; render(); };
+$("prev").onclick = () => step(-1);
+$("next").onclick = () => step(1);
+$("q").oninput = e => { query = e.target.value; render(); };
+fetch("/api/data").then(r => r.json()).then(j => { G = j.grocery; render(); });
+</script>
+<script src="/collapse.js"></script>
+</body>
+</html>
