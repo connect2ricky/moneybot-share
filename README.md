@@ -10,6 +10,13 @@ http://localhost:8765. An optional phone app shows the same dashboard.
 - **What it shows:** spending by category and by day, a monthly budget, loans and EMIs,
   credit card statements, and grocery bills.
 
+## Using Claude Code
+
+If you have Claude Code, open this folder in it and ask it to set things up for you,
+for example: "set this up for me, I bank with SBI and Kotak". It reads `CLAUDE.md` for
+how the project works, and can add parsers for banks that are not supported yet. You
+still create the Google sign-in, approve Gmail access and type any passwords yourself.
+
 ## What it understands
 
 | Source | What is read |
